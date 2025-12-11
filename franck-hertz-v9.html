@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>フランク・ヘルツの実験</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      height: 100%;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    
+    .container {
+      display: flex;
+      height: 100%;
+      gap: 12px;
+      padding: 12px;
+    }
+    
+    /* デスクトップ：横並び */
+    .left-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    
+    .right-panel {
+      width: 380px;
+      background: rgba(255,255,255,0.98);
+      color: #333;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    
+    /* キャンバス */
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      min-height: 200px;
+    }
+    
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+    }
+    
+    #tubeCanvas {
+      background: radial-gradient(ellipse at center, #0f0f1a 0%, #0a0a14 100%);
+    }
+    
+    #graphCanvas {
+      background: #fff;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* コントロールパネル */
+    .controls {
+      margin-top: 12px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .slider-row {
+      margin-bottom: 20px;
+    }
+    
+    .slider-row:last-of-type { margin-bottom: 12px; }
+    
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
+    
+    .slider-label span:first-child {
+      font-weight: 500;
+    }
+    
+    .slider-value {
+      color: #4fc3f7;
+      font-weight: bold;
+      font-family: "SF Mono", "Monaco", monospace;
+      font-size: 18px;
+      background: rgba(79, 195, 247, 0.15);
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+    
+    /* カスタムスライダー */
+    .slider-wrapper {
+      position: relative;
+      height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 12px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(145deg, #5ed4ff, #4fc3f7);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(79, 195, 247, 0.4);
+      transition: transform 0.15s ease;
+    }
+    
+    input[type=range]::-webkit-slider-thumb:active {
+      transform: scale(1.15);
+    }
+    
+    input[type=range]::-moz-range-thumb {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(145deg, #5ed4ff, #4fc3f7);
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 12px rgba(79, 195, 247, 0.4);
+    }
+    
+    /* 4.9V マーカー */
+    .voltage-markers {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      pointer-events: none;
+    }
+    
+    .voltage-marker {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 20px;
+      background: rgba(255, 152, 0, 0.6);
+    }
+    
+    /* ボタン */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 14px 8px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 50px;
+    }
+    
+    .btn:active {
+      transform: scale(0.96);
+    }
+    
+    .btn-play {
+      background: linear-gradient(145deg, #66bb6a, #4caf50);
+      color: #fff;
+    }
+    
+    .btn-play.active {
+      background: linear-gradient(145deg, #ef5350, #f44336);
+    }
+    
+    .btn-sweep {
+      background: linear-gradient(145deg, #ffb74d, #ff9800);
+      color: #000;
+    }
+    
+    .btn-sweep.active {
+      background: linear-gradient(145deg, #ff8f00, #e65100);
+      color: #fff;
+    }
+    
+    .btn-reset {
+      background: linear-gradient(145deg, #78909c, #607d8b);
+      color: #fff;
+    }
+    
+    /* 統計表示 */
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    
+    .stat-box {
+      background: rgba(0,0,0,0.25);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 4px;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      font-family: "SF Mono", "Monaco", monospace;
+    }
+    
+    .stat-value.green { color: #81c784; }
+    .stat-value.red { color: #e57373; }
+    
+    /* 右パネル */
+    .graph-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .graph-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: #1565c0;
+    }
+    
+    .theory-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+    }
+    
+    .theory-toggle input {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    
+    .graph-container {
+      flex: 1;
+      position: relative;
+      min-height: 200px;
+    }
+    
+    .current-display {
+      margin-top: 12px;
+      padding: 16px;
+      background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+      border-radius: 12px;
+      text-align: center;
+    }
+    
+    .current-label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    .current-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #1565c0;
+      font-family: "SF Mono", "Monaco", monospace;
+    }
+    
+    /* 説明パネル */
+    .info-panel {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #555;
+    }
+    
+    .info-panel strong {
+      color: #1565c0;
+    }
+    
+    .energy-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 152, 0, 0.1);
+      border-radius: 8px;
+      font-size: 14px;
+      color: #e65100;
+      font-weight: 600;
+    }
+    
+    /* モバイル対応：縦画面レイアウト */
+    @media (max-width: 900px), (max-height: 600px) and (max-width: 1200px) {
+      .container {
+        flex-direction: column;
+        padding: 8px;
+        gap: 8px;
+      }
+      
+      .left-panel {
+        flex: none;
+        height: 45%;
+        min-height: 280px;
+      }
+      
+      .right-panel {
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+        padding: 12px;
+      }
+      
+      .controls {
+        margin-top: 8px;
+        padding: 12px;
+      }
+      
+      .slider-row {
+        margin-bottom: 14px;
+      }
+      
+      .btn {
+        padding: 12px 6px;
+        font-size: 14px;
+        min-height: 44px;
+      }
+      
+      .stats {
+        margin-top: 8px;
+        gap: 8px;
+      }
+      
+      .stat-box {
+        padding: 8px;
+      }
+      
+      .stat-value {
+        font-size: 20px;
+      }
+      
+      .graph-container {
+        min-height: 150px;
+      }
+      
+      .current-display {
+        padding: 10px;
+        margin-top: 8px;
+      }
+      
+      .current-value {
+        font-size: 26px;
+      }
+      
+      .info-panel {
+        display: none;
+      }
+    }
+    
+    /* 非常に小さい画面 */
+    @media (max-width: 480px) {
+      .btn-row {
+        flex-wrap: wrap;
+      }
+      
+      .btn {
+        flex: 1 1 45%;
+      }
+      
+      .btn:last-child {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="left-panel">
+    <div class="canvas-container">
+      <canvas id="tubeCanvas"></canvas>
+    </div>
+    
+    <div class="controls">
+      <div class="slider-row">
+        <div class="slider-label">
+          <span>加速電圧 V<sub>G</sub></span>
+          <span class="slider-value" id="voltageVal">0.0 V</span>
+        </div>
+        <div class="slider-wrapper">
+          <input type="range" id="voltageSlider" min="0" max="25" step="0.1" value="0">
+        </div>
+      </div>
+      
+      <div class="slider-row">
+        <div class="slider-label">
+          <span>阻止電圧 V<sub>A</sub></span>
+          <span class="slider-value" id="retardVal">1.5 V</span>
+        </div>
+        <div class="slider-wrapper">
+          <input type="range" id="retardSlider" min="0.5" max="3.0" step="0.1" value="1.5">
+        </div>
+      </div>
+      
+      <div class="btn-row">
+        <button class="btn btn-play" id="btnPlay">
+          <span id="playIcon">▶</span>
+          <span id="playText">再生</span>
+        </button>
+        <button class="btn btn-sweep" id="btnSweep">
+          <span>📈</span>
+          <span>自動測定</span>
+        </button>
+        <button class="btn btn-reset" id="btnReset">
+          <span>↺</span>
+          <span>リセット</span>
+        </button>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-label">陽極に到達</div>
+          <div class="stat-value green" id="arrivedStat">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">跳ね返り</div>
+          <div class="stat-value red" id="bouncedStat">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="right-panel">
+    <div class="graph-header">
+      <div class="graph-title">📈 電流 I − 電圧 V 特性曲線</div>
+      <label class="theory-toggle">
+        <input type="checkbox" id="showTheory" checked>
+        理論曲線
+      </label>
+    </div>
+    
+    <div class="graph-container">
+      <canvas id="graphCanvas"></canvas>
+    </div>
+    
+    <div class="current-display">
+      <div class="current-label">測定電流 I</div>
+      <div class="current-value" id="currentVal">0.0 <small style="font-size:16px">μA</small></div>
+    </div>
+    
+    <div class="energy-indicator" id="energyIndicator">
+      💡 励起エネルギー: <span id="excitationCount">0</span> × 4.9 eV
+    </div>
+    
+    <div class="info-panel">
+      <strong>観察のポイント：</strong><br>
+      電子が水銀原子に衝突し、<strong>4.9 eV</strong> のエネルギーを失うと、
+      阻止電圧を乗り越えられずに跳ね返されます。
+      電圧が 4.9V の整数倍付近で電流が減少する様子を観察しましょう。
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================================
+// フランク・ヘルツの実験 v9
+// 教育用改良版 - スムーズグラフ＆モバイル対応
+// ========================================
+
+const tubeCanvas = document.getElementById('tubeCanvas');
+const graphCanvas = document.getElementById('graphCanvas');
+const ctx = tubeCanvas.getContext('2d');
+const gctx = graphCanvas.getContext('2d');
+
+// DOM要素
+const voltageSlider = document.getElementById('voltageSlider');
+const retardSlider = document.getElementById('retardSlider');
+const voltageVal = document.getElementById('voltageVal');
+const retardVal = document.getElementById('retardVal');
+const arrivedStat = document.getElementById('arrivedStat');
+const bouncedStat = document.getElementById('bouncedStat');
+const currentVal = document.getElementById('currentVal');
+const btnPlay = document.getElementById('btnPlay');
+const btnSweep = document.getElementById('btnSweep');
+const btnReset = document.getElementById('btnReset');
+const playIcon = document.getElementById('playIcon');
+const playText = document.getElementById('playText');
+const showTheoryCheckbox = document.getElementById('showTheory');
+const energyIndicator = document.getElementById('energyIndicator');
+const excitationCount = document.getElementById('excitationCount');
+
+// 物理定数
+const EXCITATION_E = 4.9;  // 水銀の励起エネルギー [eV]
+const V_MAX = 25;
+
+// 状態
+let voltage = 0;
+let retardingV = 1.5;
+let isPlaying = false;
+let isSweeping = false;
+let showTheory = true;
+
+// カウンター
+let arrived = 0;
+let bounced = 0;
+
+// グラフデータ（滑らかな曲線用）
+let graphData = new Map(); // voltage -> {arrived, total, current}
+let smoothedCurve = [];
+
+// 電子配列
+let electrons = [];
+
+// 水銀原子
+let hgAtoms = [];
+
+// エフェクト
+let effects = [];
+
+// 管の位置
+let tube = { x: 0, y: 0, w: 0, h: 0, cathodeX: 0, gridX: 0, anodeX: 0 };
+
+// ========== 理論曲線の計算 ==========
+function theoreticalCurrent(V) {
+  if (V < 0.5) return 0;
+  
+  let current = 0;
+  const baseGrowth = Math.pow(V, 1.5);
+  
+  // 4.9eVの整数倍で減少
+  for (let n = 1; n <= 5; n++) {
+    const peakV = n * EXCITATION_E;
+    if (V > peakV - 1 && V < peakV + 1.5) {
+      const dist = V - peakV;
+      // 急な落ち込み
+      const dip = Math.exp(-Math.pow(dist + 0.3, 2) / 0.8) * 0.6;
+      current -= baseGrowth * dip;
+    }
+  }
+  
+  current += baseGrowth;
+  return Math.max(0, current * 3);
+}
+
+// ========== 初期化 ==========
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  
+  // チューブキャンバス
+  const tubeRect = tubeCanvas.parentElement.getBoundingClientRect();
+  tubeCanvas.width = tubeRect.width * dpr;
+  tubeCanvas.height = tubeRect.height * dpr;
+  ctx.scale(dpr, dpr);
+  
+  // グラフキャンバス
+  const graphRect = graphCanvas.parentElement.getBoundingClientRect();
+  graphCanvas.width = graphRect.width * dpr;
+  graphCanvas.height = graphRect.height * dpr;
+  gctx.scale(dpr, dpr);
+  
+  // 管のサイズを計算
+  const margin = Math.min(30, tubeRect.width * 0.05);
+  tube.w = tubeRect.width - margin * 2;
+  tube.h = Math.min(tubeRect.height * 0.55, 200);
+  tube.x = margin;
+  tube.y = (tubeRect.height - tube.h) / 2;
+  
+  tube.cathodeX = tube.x + 25;
+  tube.gridX = tube.x + tube.w * 0.72;
+  tube.anodeX = tube.x + tube.w - 25;
+  
+  initHgAtoms();
+  generateTheoryCurve();
+}
+
+function initHgAtoms() {
+  hgAtoms = [];
+  const cols = 5;
+  const rows = 3;
+  const startX = tube.cathodeX + tube.w * 0.15;
+  const endX = tube.gridX - 40;
+  const spaceX = (endX - startX) / (cols - 1);
+  const spaceY = tube.h * 0.6 / (rows - 1);
+  
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      hgAtoms.push({
+        x: startX + c * spaceX + (Math.random() - 0.5) * 12,
+        y: tube.y + tube.h * 0.2 + r * spaceY + (Math.random() - 0.5) * 8,
+        excited: false,
+        timer: 0,
+        glowIntensity: 0
+      });
+    }
+  }
+}
+
+function generateTheoryCurve() {
+  smoothedCurve = [];
+  for (let v = 0; v <= V_MAX; v += 0.1) {
+    smoothedCurve.push({ v, i: theoreticalCurrent(v) });
+  }
+}
+
+// ========== 電子生成 ==========
+function createElectron() {
+  return {
+    x: tube.cathodeX + 8,
+    y: tube.y + tube.h * 0.15 + Math.random() * tube.h * 0.7,
+    vx: 1.2,
+    vy: (Math.random() - 0.5) * 0.3,
+    energy: 0,
+    lostE: 0,
+    passedGrid: false,
+    trail: []
+  };
+}
+
+// ========== 更新 ==========
+function update(dt) {
+  // 自動スイープ
+  if (isSweeping) {
+    voltage += 0.015;
+    if (voltage >= V_MAX) {
+      voltage = V_MAX;
+      isSweeping = false;
+      btnSweep.classList.remove('active');
+    }
+    voltageSlider.value = voltage;
+    voltageVal.textContent = voltage.toFixed(1) + ' V';
+  }
+  
+  // 励起回数表示
+  const excitations = Math.floor((voltage + 0.5) / EXCITATION_E);
+  excitationCount.textContent = Math.max(0, excitations);
+  
+  // 電子を生成
+  const maxElectrons = window.innerWidth < 600 ? 40 : 70;
+  if (voltage > 0.3 && electrons.length < maxElectrons) {
+    if (Math.random() < 0.3) {
+      electrons.push(createElectron());
+    }
+  }
+  
+  const distCG = tube.gridX - tube.cathodeX;
+  
+  // 電子更新
+  for (let i = electrons.length - 1; i >= 0; i--) {
+    const e = electrons[i];
+    
+    // トレイル記録
+    if (e.trail.length > 8) e.trail.shift();
+    e.trail.push({ x: e.x, y: e.y });
+    
+    // ===== 加速領域（陰極→グリッド）=====
+    if (e.x < tube.gridX) {
+      // 電場による加速
+      e.vx += voltage * 0.025;
+      
+      // 現在のエネルギー
+      const progress = (e.x - tube.cathodeX) / distCG;
+      e.energy = voltage * progress - e.lostE;
+      
+      // 水銀原子との衝突判定
+      if (e.energy >= EXCITATION_E - 0.2) {
+        for (const hg of hgAtoms) {
+          const dx = e.x - hg.x;
+          const dy = e.y - hg.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < 18 && Math.random() < 0.25) {
+            e.lostE += EXCITATION_E;
+            e.vy = (Math.random() - 0.5) * 1.0;
+            
+            // 励起エフェクト
+            hg.excited = true;
+            hg.timer = 30;
+            hg.glowIntensity = 1;
+            
+            // 光子放出エフェクト
+            effects.push({
+              type: 'photon',
+              x: hg.x,
+              y: hg.y,
+              r: 0,
+              alpha: 1
+            });
+            
+            break;
+          }
+        }
+      }
+      
+      // 加速領域では最低速度を保証
+      if (e.vx < 0.8) e.vx = 0.8;
+    }
+    // ===== 減速領域（グリッド→陽極）=====
+    else {
+      e.passedGrid = true;
+      
+      // グリッド通過時のエネルギー
+      const gridEnergy = voltage - e.lostE;
+      
+      // 阻止電圧による減速
+      e.vx -= retardingV * 0.1;
+      
+      // 跳ね返り判定
+      if (e.vx <= 0 || gridEnergy < retardingV) {
+        bounced++;
+        recordData(false);
+        
+        effects.push({
+          type: 'bounce',
+          x: e.x,
+          y: e.y,
+          r: 5,
+          alpha: 1
+        });
+        
+        electrons.splice(i, 1);
+        continue;
+      }
+    }
+    
+    // 速度上限
+    e.vx = Math.min(e.vx, 12);
+    
+    // 位置更新
+    e.x += e.vx;
+    e.y += e.vy;
+    e.vy *= 0.98; // 減衰
+    
+    // 壁で跳ね返り
+    if (e.y < tube.y + 8 || e.y > tube.y + tube.h - 8) {
+      e.vy *= -0.6;
+      e.y = Math.max(tube.y + 8, Math.min(tube.y + tube.h - 8, e.y));
+    }
+    
+    // 陽極到達
+    if (e.x > tube.anodeX) {
+      arrived++;
+      recordData(true);
+      
+      effects.push({
+        type: 'arrive',
+        x: tube.anodeX,
+        y: e.y,
+        alpha: 1
+      });
+      
+      electrons.splice(i, 1);
+    }
+  }
+  
+  // 水銀原子の励起状態を更新
+  for (const hg of hgAtoms) {
+    if (hg.excited) {
+      hg.timer--;
+      hg.glowIntensity *= 0.92;
+      if (hg.timer <= 0) {
+        hg.excited = false;
+        hg.glowIntensity = 0;
+      }
+    }
+  }
+  
+  // エフェクト更新
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const e = effects[i];
+    e.alpha -= 0.04;
+    if (e.type === 'bounce' || e.type === 'photon') {
+      e.r += 3;
+    }
+    if (e.alpha <= 0) {
+      effects.splice(i, 1);
+    }
+  }
+  
+  // 表示更新
+  arrivedStat.textContent = arrived;
+  bouncedStat.textContent = bounced;
+  
+  // 電流計算
+  const total = arrived + bounced;
+  if (total > 0) {
+    const rate = arrived / total;
+    const current = rate * Math.pow(voltage + 0.5, 1.5) * 3;
+    currentVal.innerHTML = current.toFixed(1) + ' <small style="font-size:16px">μA</small>';
+  }
+}
+
+// グラフにデータを記録
+function recordData(isArrived) {
+  const vKey = Math.round(voltage * 10) / 10;
+  
+  if (!graphData.has(vKey)) {
+    graphData.set(vKey, { arrived: 0, total: 0 });
+  }
+  
+  const data = graphData.get(vKey);
+  data.total++;
+  if (isArrived) data.arrived++;
+  
+  // 電流値を計算
+  const rate = data.arrived / data.total;
+  data.current = rate * Math.pow(vKey + 0.5, 1.5) * 3;
+}
+
+// ========== 描画 ==========
+function draw() {
+  const w = tubeCanvas.clientWidth;
+  const h = tubeCanvas.clientHeight;
+  
+  // 背景クリア
+  ctx.clearRect(0, 0, w, h);
+  
+  // 真空管の背景
+  const tubeGrad = ctx.createLinearGradient(tube.x, tube.y, tube.x, tube.y + tube.h);
+  tubeGrad.addColorStop(0, 'rgba(60, 80, 120, 0.08)');
+  tubeGrad.addColorStop(0.5, 'rgba(80, 100, 140, 0.12)');
+  tubeGrad.addColorStop(1, 'rgba(60, 80, 120, 0.08)');
+  
+  ctx.fillStyle = tubeGrad;
+  ctx.strokeStyle = 'rgba(100, 150, 200, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(tube.x, tube.y, tube.w, tube.h, 12);
+  ctx.fill();
+  ctx.stroke();
+  
+  // 加速領域
+  const accelGrad = ctx.createLinearGradient(tube.cathodeX, 0, tube.gridX, 0);
+  accelGrad.addColorStop(0, 'rgba(30, 100, 200, 0.15)');
+  accelGrad.addColorStop(1, 'rgba(30, 100, 200, 0.05)');
+  ctx.fillStyle = accelGrad;
+  ctx.fillRect(tube.cathodeX, tube.y + 2, tube.gridX - tube.cathodeX, tube.h - 4);
+  
+  // 減速領域
+  const decelGrad = ctx.createLinearGradient(tube.gridX, 0, tube.anodeX, 0);
+  decelGrad.addColorStop(0, 'rgba(200, 80, 80, 0.15)');
+  decelGrad.addColorStop(1, 'rgba(200, 80, 80, 0.08)');
+  ctx.fillStyle = decelGrad;
+  ctx.fillRect(tube.gridX, tube.y + 2, tube.anodeX - tube.gridX, tube.h - 4);
+  
+  // 陰極（熱陰極）
+  ctx.fillStyle = '#546e7a';
+  ctx.beginPath();
+  ctx.roundRect(tube.cathodeX - 6, tube.y + 15, 12, tube.h - 30, 3);
+  ctx.fill();
+  
+  // 陰極グロー
+  if (voltage > 0.3) {
+    const intensity = Math.min(voltage / 5, 1);
+    const glow = ctx.createRadialGradient(
+      tube.cathodeX, tube.y + tube.h/2, 0,
+      tube.cathodeX, tube.y + tube.h/2, 60
+    );
+    glow.addColorStop(0, `rgba(255, 150, 50, ${0.6 * intensity})`);
+    glow.addColorStop(0.5, `rgba(255, 100, 30, ${0.3 * intensity})`);
+    glow.addColorStop(1, 'rgba(255, 100, 30, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(tube.x, tube.y, 100, tube.h);
+  }
+  
+  // グリッド
+  ctx.strokeStyle = '#ffd54f';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 10]);
+  ctx.beginPath();
+  ctx.moveTo(tube.gridX, tube.y + 12);
+  ctx.lineTo(tube.gridX, tube.y + tube.h - 12);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // 陽極
+  const anodeGrad = ctx.createLinearGradient(tube.anodeX - 8, 0, tube.anodeX + 8, 0);
+  anodeGrad.addColorStop(0, '#1e88e5');
+  anodeGrad.addColorStop(0.5, '#26a69a');
+  anodeGrad.addColorStop(1, '#1e88e5');
+  ctx.fillStyle = anodeGrad;
+  ctx.beginPath();
+  ctx.roundRect(tube.anodeX - 6, tube.y + 12, 12, tube.h - 24, 3);
+  ctx.fill();
+  
+  // 電極ラベル
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('K（陰極）', tube.cathodeX, tube.y + tube.h + 20);
+  ctx.fillText('G（グリッド）', tube.gridX, tube.y + tube.h + 20);
+  ctx.fillText('A（陽極）', tube.anodeX, tube.y + tube.h + 20);
+  
+  // 水銀原子
+  for (const hg of hgAtoms) {
+    // 励起グロー
+    if (hg.glowIntensity > 0) {
+      const glow = ctx.createRadialGradient(hg.x, hg.y, 0, hg.x, hg.y, 35);
+      glow.addColorStop(0, `rgba(255, 200, 80, ${0.8 * hg.glowIntensity})`);
+      glow.addColorStop(0.5, `rgba(255, 150, 50, ${0.4 * hg.glowIntensity})`);
+      glow.addColorStop(1, 'rgba(255, 150, 50, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(hg.x, hg.y, 35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // 原子本体
+    const atomGrad = ctx.createRadialGradient(hg.x - 3, hg.y - 3, 0, hg.x, hg.y, 12);
+    if (hg.excited) {
+      atomGrad.addColorStop(0, '#ffcc80');
+      atomGrad.addColorStop(1, '#ff9800');
+    } else {
+      atomGrad.addColorStop(0, '#78909c');
+      atomGrad.addColorStop(1, '#455a64');
+    }
+    ctx.fillStyle = atomGrad;
+    ctx.beginPath();
+    ctx.arc(hg.x, hg.y, 11, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // ラベル
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('Hg', hg.x, hg.y + 3);
+  }
+  
+  // エフェクト描画
+  for (const e of effects) {
+    if (e.type === 'bounce') {
+      ctx.strokeStyle = `rgba(244, 67, 54, ${e.alpha})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (e.type === 'photon') {
+      ctx.strokeStyle = `rgba(255, 200, 100, ${e.alpha})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (e.type === 'arrive') {
+      ctx.fillStyle = `rgba(76, 175, 80, ${e.alpha})`;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  // 電子
+  for (const e of electrons) {
+    // トレイル
+    if (e.trail.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(e.trail[0].x, e.trail[0].y);
+      for (let i = 1; i < e.trail.length; i++) {
+        ctx.lineTo(e.trail[i].x, e.trail[i].y);
+      }
+      ctx.strokeStyle = e.lostE > 0 ? 'rgba(255, 152, 0, 0.3)' : 'rgba(79, 195, 247, 0.3)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    
+    // 電子本体
+    const color = e.lostE > 0 ? '#ff9800' : '#4fc3f7';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
+function drawGraph() {
+  const w = graphCanvas.clientWidth;
+  const h = graphCanvas.clientHeight;
+  
+  // 背景
+  gctx.fillStyle = '#fff';
+  gctx.fillRect(0, 0, w, h);
+  
+  const pad = { l: 45, r: 15, t: 15, b: 32 };
+  const gw = w - pad.l - pad.r;
+  const gh = h - pad.t - pad.b;
+  
+  // グリッド線
+  gctx.strokeStyle = '#f0f0f0';
+  gctx.lineWidth = 1;
+  for (let v = 0; v <= V_MAX; v += 5) {
+    const x = pad.l + (v / V_MAX) * gw;
+    gctx.beginPath();
+    gctx.moveTo(x, pad.t);
+    gctx.lineTo(x, h - pad.b);
+    gctx.stroke();
+  }
+  
+  // 4.9Vの倍数マーカー
+  gctx.strokeStyle = 'rgba(255, 152, 0, 0.25)';
+  gctx.lineWidth = 2;
+  for (let n = 1; n <= 5; n++) {
+    const v = EXCITATION_E * n;
+    if (v > V_MAX) break;
+    const x = pad.l + (v / V_MAX) * gw;
+    gctx.beginPath();
+    gctx.moveTo(x, pad.t);
+    gctx.lineTo(x, h - pad.b);
+    gctx.stroke();
+    
+    // ラベル
+    gctx.fillStyle = 'rgba(255, 152, 0, 0.7)';
+    gctx.font = '10px sans-serif';
+    gctx.textAlign = 'center';
+    gctx.fillText(`${(v).toFixed(1)}V`, x, pad.t - 3);
+  }
+  
+  // 軸
+  gctx.strokeStyle = '#333';
+  gctx.lineWidth = 1.5;
+  gctx.beginPath();
+  gctx.moveTo(pad.l, pad.t);
+  gctx.lineTo(pad.l, h - pad.b);
+  gctx.lineTo(w - pad.r, h - pad.b);
+  gctx.stroke();
+  
+  // 軸ラベル
+  gctx.fillStyle = '#333';
+  gctx.font = '12px sans-serif';
+  gctx.textAlign = 'center';
+  gctx.fillText('加速電圧 V [V]', w / 2, h - 5);
+  
+  // 目盛り
+  gctx.font = '11px sans-serif';
+  for (let v = 0; v <= V_MAX; v += 5) {
+    const x = pad.l + (v / V_MAX) * gw;
+    gctx.fillText(v.toString(), x, h - pad.b + 14);
+  }
+  
+  // Y軸ラベル
+  gctx.save();
+  gctx.translate(12, h / 2);
+  gctx.rotate(-Math.PI / 2);
+  gctx.fillText('電流 I [μA]', 0, 0);
+  gctx.restore();
+  
+  // 理論曲線の最大値
+  const maxTheory = Math.max(...smoothedCurve.map(d => d.i)) * 1.1;
+  
+  // 理論曲線を描画
+  if (showTheory && smoothedCurve.length > 0) {
+    gctx.strokeStyle = 'rgba(156, 39, 176, 0.4)';
+    gctx.lineWidth = 2;
+    gctx.setLineDash([6, 4]);
+    gctx.beginPath();
+    
+    let started = false;
+    for (const d of smoothedCurve) {
+      const x = pad.l + (d.v / V_MAX) * gw;
+      const y = h - pad.b - (d.i / maxTheory) * gh;
+      
+      if (!started) {
+        gctx.moveTo(x, y);
+        started = true;
+      } else {
+        gctx.lineTo(x, y);
+      }
+    }
+    gctx.stroke();
+    gctx.setLineDash([]);
+  }
+  
+  // 実測データの描画
+  if (graphData.size > 2) {
+    // データをソート
+    const sortedData = Array.from(graphData.entries())
+      .map(([v, d]) => ({ v: parseFloat(v), ...d }))
+      .filter(d => d.current !== undefined)
+      .sort((a, b) => a.v - b.v);
+    
+    if (sortedData.length > 2) {
+      // スムージング（移動平均）
+      const smoothed = [];
+      const windowSize = 3;
+      for (let i = 0; i < sortedData.length; i++) {
+        let sum = 0;
+        let count = 0;
+        for (let j = Math.max(0, i - windowSize); j <= Math.min(sortedData.length - 1, i + windowSize); j++) {
+          sum += sortedData[j].current;
+          count++;
+        }
+        smoothed.push({ v: sortedData[i].v, current: sum / count });
+      }
+      
+      // 曲線を描画（ベジエ曲線で滑らかに）
+      gctx.strokeStyle = '#1565c0';
+      gctx.lineWidth = 2.5;
+      gctx.lineCap = 'round';
+      gctx.lineJoin = 'round';
+      gctx.beginPath();
+      
+      for (let i = 0; i < smoothed.length; i++) {
+        const d = smoothed[i];
+        const x = pad.l + (d.v / V_MAX) * gw;
+        const y = h - pad.b - (d.current / maxTheory) * gh;
+        
+        if (i === 0) {
+          gctx.moveTo(x, y);
+        } else if (i < smoothed.length - 1) {
+          // ベジエ曲線で滑らかに
+          const prev = smoothed[i - 1];
+          const next = smoothed[i + 1];
+          const prevX = pad.l + (prev.v / V_MAX) * gw;
+          const nextX = pad.l + (next.v / V_MAX) * gw;
+          const prevY = h - pad.b - (prev.current / maxTheory) * gh;
+          const nextY = h - pad.b - (next.current / maxTheory) * gh;
+          
+          const cpX = x;
+          const cpY = y;
+          gctx.quadraticCurveTo(cpX, cpY, (x + nextX) / 2, (y + nextY) / 2);
+        } else {
+          gctx.lineTo(x, y);
+        }
+      }
+      gctx.stroke();
+    }
+  }
+  
+  // 現在位置マーカー
+  if (voltage > 0) {
+    const cx = pad.l + (voltage / V_MAX) * gw;
+    let cy = h - pad.b;
+    
+    const total = arrived + bounced;
+    if (total > 0) {
+      const rate = arrived / total;
+      const current = rate * Math.pow(voltage + 0.5, 1.5) * 3;
+      cy = h - pad.b - (current / maxTheory) * gh;
+    }
+    
+    // 縦線
+    gctx.strokeStyle = 'rgba(255, 87, 34, 0.3)';
+    gctx.lineWidth = 1;
+    gctx.beginPath();
+    gctx.moveTo(cx, pad.t);
+    gctx.lineTo(cx, h - pad.b);
+    gctx.stroke();
+    
+    // ポイント
+    gctx.fillStyle = '#ff5722';
+    gctx.beginPath();
+    gctx.arc(cx, Math.max(cy, pad.t + 5), 7, 0, Math.PI * 2);
+    gctx.fill();
+    
+    // 白い縁
+    gctx.strokeStyle = '#fff';
+    gctx.lineWidth = 2;
+    gctx.stroke();
+  }
+  
+  // 凡例
+  if (showTheory) {
+    const legendX = w - pad.r - 90;
+    const legendY = pad.t + 10;
+    
+    gctx.fillStyle = 'rgba(255,255,255,0.9)';
+    gctx.fillRect(legendX - 5, legendY - 5, 85, 40);
+    
+    gctx.strokeStyle = 'rgba(156, 39, 176, 0.6)';
+    gctx.setLineDash([6, 4]);
+    gctx.beginPath();
+    gctx.moveTo(legendX, legendY + 5);
+    gctx.lineTo(legendX + 25, legendY + 5);
+    gctx.stroke();
+    gctx.setLineDash([]);
+    
+    gctx.strokeStyle = '#1565c0';
+    gctx.lineWidth = 2.5;
+    gctx.beginPath();
+    gctx.moveTo(legendX, legendY + 22);
+    gctx.lineTo(legendX + 25, legendY + 22);
+    gctx.stroke();
+    
+    gctx.fillStyle = '#666';
+    gctx.font = '11px sans-serif';
+    gctx.textAlign = 'left';
+    gctx.fillText('理論', legendX + 30, legendY + 9);
+    gctx.fillText('実測', legendX + 30, legendY + 26);
+  }
+}
+
+// ========== アニメーションループ ==========
+let lastTime = 0;
+function animate(ts) {
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+  
+  if (isPlaying) {
+    update(dt);
+  }
+  
+  draw();
+  drawGraph();
+  
+  requestAnimationFrame(animate);
+}
+
+// ========== イベントハンドラ ==========
+voltageSlider.addEventListener('input', () => {
+  voltage = parseFloat(voltageSlider.value);
+  voltageVal.textContent = voltage.toFixed(1) + ' V';
+});
+
+retardSlider.addEventListener('input', () => {
+  retardingV = parseFloat(retardSlider.value);
+  retardVal.textContent = retardingV.toFixed(1) + ' V';
+});
+
+btnPlay.addEventListener('click', () => {
+  isPlaying = !isPlaying;
+  playIcon.textContent = isPlaying ? '⏸' : '▶';
+  playText.textContent = isPlaying ? '停止' : '再生';
+  btnPlay.classList.toggle('active', isPlaying);
+  
+  if (!isPlaying) {
+    isSweeping = false;
+    btnSweep.classList.remove('active');
+  }
+});
+
+btnSweep.addEventListener('click', () => {
+  if (!isSweeping) {
+    isSweeping = true;
+    isPlaying = true;
+    voltage = 0;
+    voltageSlider.value = 0;
+    voltageVal.textContent = '0.0 V';
+    
+    // リセット
+    electrons = [];
+    graphData.clear();
+    effects = [];
+    arrived = 0;
+    bounced = 0;
+    
+    playIcon.textContent = '⏸';
+    playText.textContent = '停止';
+    btnPlay.classList.add('active');
+    btnSweep.classList.add('active');
+  } else {
+    isSweeping = false;
+    btnSweep.classList.remove('active');
+  }
+});
+
+btnReset.addEventListener('click', () => {
+  isPlaying = false;
+  isSweeping = false;
+  voltage = 0;
+  voltageSlider.value = 0;
+  voltageVal.textContent = '0.0 V';
+  
+  electrons = [];
+  graphData.clear();
+  effects = [];
+  arrived = 0;
+  bounced = 0;
+  
+  arrivedStat.textContent = '0';
+  bouncedStat.textContent = '0';
+  currentVal.innerHTML = '0.0 <small style="font-size:16px">μA</small>';
+  
+  playIcon.textContent = '▶';
+  playText.textContent = '再生';
+  btnPlay.classList.remove('active');
+  btnSweep.classList.remove('active');
+  
+  initHgAtoms();
+});
+
+showTheoryCheckbox.addEventListener('change', () => {
+  showTheory = showTheoryCheckbox.checked;
+});
+
+// タッチイベントの改善
+let touchStartY = 0;
+document.addEventListener('touchstart', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+    touchStartY = e.touches[0].clientY;
+  }
+}, { passive: true });
+
+// リサイズ対応
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(resize, 100);
+});
+
+// 初期化
+resize();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
